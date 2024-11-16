@@ -1,0 +1,698 @@
+!pip install datasets==2.14.5
+!pip install --upgrade fsspec==2024.10.0
+!pip install --upgrade transformers==4.41.0
+!pip install wandb
+!pip install bertviz
+!cp requirements.txt /content/drive/MyDrive/
+# Save pip installations
+!pip freeze > requirements.txt
+!pip install bertviz
+# Restart the runtime (if you haven't already)
+!pip install transformers==4.28.1 torch numpy datasets scikit-learn
+# Reinstall necessary packages
+!pip install --upgrade torch torchvision torchaudio
+!pip install --upgrade accelerate==0.29.1 bitsandbytes==0.43.0 transformers==4.39.3 trl==0.8.1
+!pip cache purge
+!pip install transformers==4.28.1
+!pip install --upgrade torch
+
+!pip install pandas numpy scikit-learn matplotlib seaborn
+!pip install nltk
+!pip uninstall transformers -y
+!pip install transformers
+import pandas as pd
+import numpy as np
+from datasets import Dataset
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
+from sklearn.metrics import f1_score, confusion_matrix, roc_auc_score
+from sklearn.model_selection import train_test_split as sklearn_train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import LinearSVC
+from sklearn.pipeline import make_pipeline
+from sklearn.calibration import CalibratedClassifierCV
+from nltk.sentiment import SentimentIntensityAnalyzer
+import nltk
+import seaborn as sns
+import matplotlib.pyplot as plt
+import re
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+
+# Download necessary NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('vader_lexicon')
+
+# Initialize VADER sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+
+# Function to get sentiment scores
+def get_sentiment_scores(text):
+    return sia.polarity_scores(text)
+
+# Text cleaning function
+def clean_text(text):
+    # Remove special characters and digits
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Tokenize
+    tokens = word_tokenize(text)
+    
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [token for token in tokens if token not in stop_words]
+    
+    # Join tokens back into a string
+    cleaned_text = ' '.join(tokens)
+    
+    return cleaned_text
+
+# Step 1: Load and combine the CSV files
+Twitter_Disaster = [
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/sample_submission.csv',
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/test.csv',
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/train.csv'
+]
+df_list = []
+for file in Twitter_Disaster:
+    df = pd.read_csv(file, encoding='ISO-8859-1')
+    df_list.append(df)
+combined_df = pd.concat(df_list, ignore_index=True)
+
+# Step 2-3: Prepare the dataset
+if 'target' in combined_df.columns:
+    combined_df = combined_df.rename(columns={'target': 'labels'})
+combined_df['labels'] = combined_df['labels'].fillna(-1)  # Fill NaN with -1 for unlabeled data
+labeled_df = combined_df[combined_df['labels'] != -1].copy()
+labeled_df['labels'] = labeled_df['labels'].astype(int)
+
+print("Combined DataFrame:")
+print(combined_df.head())
+print(f"Total samples: {len(combined_df)}")
+print(f"Labeled samples: {len(labeled_df)}")
+
+# Apply the cleaning function to create the 'cleaned_text' column
+labeled_df['cleaned_text'] = labeled_df['text'].apply(clean_text)
+df_train, df_test = sklearn_train_test_split(labeled_df, test_size=0.2, random_state=42)
+print('Training Set Shape = {}'.format(df_train.shape))
+print('Training Set Memory Usage = {:.2f} MB'.format(df_train.memory_usage().sum() / 1024**2))
+print('Test Set Shape = {}'.format(df_test.shape))
+print('Test Set Memory Usage = {:.2f} MB'.format(df_test.memory_usage().sum() / 1024**2))
+
+# You can continue with your analysis, model training, or other tasks here
+​
+import pandas as pd
+import numpy as np
+from datasets import Dataset
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
+from sklearn.metrics import f1_score, confusion_matrix, roc_auc_score
+from sklearn.model_selection import train_test_split as sklearn_train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import LinearSVC
+from sklearn.pipeline import make_pipeline
+from sklearn.calibration import CalibratedClassifierCV
+from nltk.sentiment import SentimentIntensityAnalyzer
+import nltk
+import seaborn as sns
+import matplotlib.pyplot as plt
+import re
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+​
+# Download necessary NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('vader_lexicon')
+​
+# Initialize VADER sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+​
+# Function to get sentiment scores
+def get_sentiment_scores(text):
+    return sia.polarity_scores(text)
+​
+# Text cleaning function
+def clean_text(text):
+    # Remove special characters and digits
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Tokenize
+    tokens = word_tokenize(text)
+    
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [token for token in tokens if token not in stop_words]
+    
+    # Join tokens back into a string
+    cleaned_text = ' '.join(tokens)
+    
+    return cleaned_text
+​
+# Step 1: Load and combine the CSV files
+Twitter_Disaster = [
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/sample_submission.csv',
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/test.csv',
+    'C:/Users/devot/OneDrive/Desktop/CSCE_5214/twitter_dis/train.csv'
+]
+df_list = []
+for file in Twitter_Disaster:
+    df = pd.read_csv(file, encoding='ISO-8859-1')
+    df_list.append(df)
+combined_df = pd.concat(df_list, ignore_index=True)
+​
+# Step 2-3: Prepare the dataset
+if 'target' in combined_df.columns:
+    combined_df = combined_df.rename(columns={'target': 'labels'})
+combined_df['labels'] = combined_df['labels'].fillna(-1)  # Fill NaN with -1 for unlabeled data
+labeled_df = combined_df[combined_df['labels'] != -1].copy()
+labeled_df['labels'] = labeled_df['labels'].astype(int)
+​
+print("Combined DataFrame:")
+print(combined_df.head())
+print(f"Total samples: {len(combined_df)}")
+print(f"Labeled samples: {len(labeled_df)}")
+​
+# Apply the cleaning function to create the 'cleaned_text' column
+labeled_df['cleaned_text'] = labeled_df['text'].apply(clean_text)
+df_train, df_test = sklearn_train_test_split(labeled_df, test_size=0.2, random_state=42)
+print('Training Set Shape = {}'.format(df_train.shape))
+print('Training Set Memory Usage = {:.2f} MB'.format(df_train.memory_usage().sum() / 1024**2))
+print('Test Set Shape = {}'.format(df_test.shape))
+print('Test Set Memory Usage = {:.2f} MB'.format(df_test.memory_usage().sum() / 1024**2))
+​
+# You can continue with your analysis, model training, or other tasks here
+[nltk_data] Downloading package punkt to
+[nltk_data]     C:\Users\devot\AppData\Roaming\nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to
+[nltk_data]     C:\Users\devot\AppData\Roaming\nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+[nltk_data] Downloading package vader_lexicon to
+[nltk_data]     C:\Users\devot\AppData\Roaming\nltk_data...
+[nltk_data]   Package vader_lexicon is already up-to-date!
+Combined DataFrame:
+   id keyword location                                               text  \
+0   0     NaN      NaN                 Just happened a terrible car crash   
+1   2     NaN      NaN  Heard about #earthquake is different cities, s...   
+2   3     NaN      NaN  there is a forest fire at spot pond, geese are...   
+3   9     NaN      NaN           Apocalypse lighting. #Spokane #wildfires   
+4  11     NaN      NaN      Typhoon Soudelor kills 28 in China and Taiwan   
+
+   labels  
+0    -1.0  
+1    -1.0  
+2    -1.0  
+3    -1.0  
+4    -1.0  
+Total samples: 14139
+Labeled samples: 7613
+Training Set Shape = (6090, 6)
+Training Set Memory Usage = 0.30 MB
+Test Set Shape = (1523, 6)
+Test Set Memory Usage = 0.08 MB
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\W', ' ', text)
+    text = re.sub(r'\d', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    tokens = word_tokenize(text)
+    stop_words = set(stopwords.words('english'))
+    tokens = [token for token in tokens if token not in stop_words]
+    cleaned_text = ' '.join(tokens)
+    return cleaned_text
+    #Apply text cleaning
+df_train['cleaned_text'] = df_train['text'].apply(clean_text)
+df_test['cleaned_text'] = df_test['text'].apply(clean_text)
+
+# Calculate text length
+df_train["length"] = df_train["cleaned_text"].apply(len)
+df_test["length"] = df_test["cleaned_text"].apply(len)
+
+print("Train Length Stat")
+print(df_train["length"].describe())
+print("\nTest Length Stat")
+print(df_test["length"].describe())
+# Prepare the dataset
+if 'target' in combined_df.columns:
+    combined_df = combined_df.rename(columns={'target': 'labels'})
+combined_df['labels'] = combined_df['labels'].fillna(-1)
+labeled_df = combined_df[combined_df['labels'] != -1].copy()
+labeled_df['labels'] = labeled_df['labels'].astype(int)
+
+print("Combined DataFrame:")
+print(combined_df.head())
+print(f"Total samples: {len(combined_df)}")
+print(f"Labeled samples: {len(labeled_df)}")
+
+# Clean the text
+labeled_df['cleaned_text'] = labeled_df['text'].apply(clean_text)
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\W', ' ', text)
+    text = re.sub(r'\d', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    tokens = word_tokenize(text)
+    stop_words = set(stopwords.words('english'))
+    tokens = [token for token in tokens if token not in stop_words]
+    cleaned_text = ' '.join(tokens)
+    return cleaned_text
+    #Apply text cleaning
+df_train['cleaned_text'] = df_train['text'].apply(clean_text)
+df_test['cleaned_text'] = df_test['text'].apply(clean_text)
+​
+# Calculate text length
+df_train["length"] = df_train["cleaned_text"].apply(len)
+df_test["length"] = df_test["cleaned_text"].apply(len)
+​
+print("Train Length Stat")
+print(df_train["length"].describe())
+print("\nTest Length Stat")
+print(df_test["length"].describe())
+# Prepare the dataset
+if 'target' in combined_df.columns:
+    combined_df = combined_df.rename(columns={'target': 'labels'})
+combined_df['labels'] = combined_df['labels'].fillna(-1)
+labeled_df = combined_df[combined_df['labels'] != -1].copy()
+labeled_df['labels'] = labeled_df['labels'].astype(int)
+​
+print("Combined DataFrame:")
+print(combined_df.head())
+print(f"Total samples: {len(combined_df)}")
+print(f"Labeled samples: {len(labeled_df)}")
+​
+# Clean the text
+labeled_df['cleaned_text'] = labeled_df['text'].apply(clean_text)
+Train Length Stat
+count    6090.000000
+mean       63.783415
+std        24.853459
+min         3.000000
+25%        45.000000
+50%        65.000000
+75%        83.000000
+max       138.000000
+Name: length, dtype: float64
+
+Test Length Stat
+count    1523.000000
+mean       63.912016
+std        24.940299
+min         4.000000
+25%        45.000000
+50%        64.000000
+75%        83.000000
+max       134.000000
+Name: length, dtype: float64
+Combined DataFrame:
+   id keyword location                                               text  \
+0   0     NaN      NaN                 Just happened a terrible car crash   
+1   2     NaN      NaN  Heard about #earthquake is different cities, s...   
+2   3     NaN      NaN  there is a forest fire at spot pond, geese are...   
+3   9     NaN      NaN           Apocalypse lighting. #Spokane #wildfires   
+4  11     NaN      NaN      Typhoon Soudelor kills 28 in China and Taiwan   
+
+   labels  
+0    -1.0  
+1    -1.0  
+2    -1.0  
+3    -1.0  
+4    -1.0  
+Total samples: 14139
+Labeled samples: 7613
+
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from datasets import Dataset
+import numpy as np
+from sklearn.metrics import f1_score, confusion_matrix, roc_auc_score
+import os
+
+# Load the tokenizer for BERT
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+
+# Define tokenization function
+def tokenize_function(examples):
+    return tokenizer(examples['cleaned_text'], padding=True, truncation=True, max_length=128)
+
+# Create dataset from pandas DataFrame
+dataset = Dataset.from_pandas(labeled_df)
+
+# Tokenize the dataset
+tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=['text', 'cleaned_text'])
+
+# Split the dataset into training and testing sets
+train_test_split = tokenized_dataset.train_test_split(test_size=0.2, seed=42)
+train_dataset = train_test_split['train']
+test_dataset = train_test_split['test']
+
+# Load a pre-trained BERT model for sequence classification
+model = AutoModelForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
+
+# Define training arguments
+training_args = TrainingArguments(
+    output_dir='./results',
+    evaluation_strategy="steps",
+    eval_steps=500,
+    per_device_train_batch_size=128,
+    per_device_eval_batch_size=128,
+    num_train_epochs=1,
+    weight_decay=0.01,
+    logging_dir='./logs',
+    logging_steps=500,
+    fp16=False,
+    gradient_accumulation_steps=4,
+    warmup_steps=100,
+    learning_rate=5e-5,
+    max_grad_norm=1.0,
+    dataloader_num_workers=4,
+    report_to="none"
+)
+
+# Define compute_metrics function
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    return {
+        'f1': f1_score(labels, predictions),
+        'confusion_matrix': confusion_matrix(labels, predictions).tolist(),
+        'roc_auc': roc_auc_score(labels, logits[:, 1])
+    }
+
+# Disable wandb logging
+os.environ["WANDB_DISABLED"] = "true"
+
+# Initialize the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset,
+    compute_metrics=compute_metrics,
+    tokenizer=tokenizer,
+)
+
+# Train the model
+print("Starting training...")
+trainer.train()
+print("Training completed.")
+
+# Evaluate the model
+print("Evaluating the model...")
+evaluation_results = trainer.evaluate()
+print("Evaluation results:", evaluation_results)
+
+# Optional: Save the fine-tuned BERT model
+model.save_pretrained('./fine_tuned_bert_model')
+tokenizer.save_pretrained('./fine_tuned_bert_model')
+
+print("\nModels trained and evaluated.")
+​
+​
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from datasets import Dataset
+import numpy as np
+from sklearn.metrics import f1_score, confusion_matrix, roc_auc_score
+import os
+​
+# Load the tokenizer for BERT
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+​
+# Define tokenization function
+def tokenize_function(examples):
+    return tokenizer(examples['cleaned_text'], padding=True, truncation=True, max_length=128)
+​
+# Create dataset from pandas DataFrame
+dataset = Dataset.from_pandas(labeled_df)
+​
+# Tokenize the dataset
+tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=['text', 'cleaned_text'])
+​
+# Split the dataset into training and testing sets
+train_test_split = tokenized_dataset.train_test_split(test_size=0.2, seed=42)
+train_dataset = train_test_split['train']
+test_dataset = train_test_split['test']
+​
+# Load a pre-trained BERT model for sequence classification
+model = AutoModelForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2)
+​
+# Define training arguments
+training_args = TrainingArguments(
+    output_dir='./results',
+    evaluation_strategy="steps",
+    eval_steps=500,
+    per_device_train_batch_size=128,
+    per_device_eval_batch_size=128,
+    num_train_epochs=1,
+    weight_decay=0.01,
+    logging_dir='./logs',
+    logging_steps=500,
+    fp16=False,
+    gradient_accumulation_steps=4,
+    warmup_steps=100,
+    learning_rate=5e-5,
+    max_grad_norm=1.0,
+    dataloader_num_workers=4,
+    report_to="none"
+)
+​
+# Define compute_metrics function
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    return {
+        'f1': f1_score(labels, predictions),
+        'confusion_matrix': confusion_matrix(labels, predictions).tolist(),
+        'roc_auc': roc_auc_score(labels, logits[:, 1])
+    }
+​
+# Disable wandb logging
+os.environ["WANDB_DISABLED"] = "true"
+​
+# Initialize the Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset,
+    compute_metrics=compute_metrics,
+    tokenizer=tokenizer,
+)
+​
+# Train the model
+print("Starting training...")
+trainer.train()
+print("Training completed.")
+​
+# Evaluate the model
+print("Evaluating the model...")
+evaluation_results = trainer.evaluate()
+print("Evaluation results:", evaluation_results)
+​
+# Optional: Save the fine-tuned BERT model
+model.save_pretrained('./fine_tuned_bert_model')
+tokenizer.save_pretrained('./fine_tuned_bert_model')
+​
+print("\nModels trained and evaluated.")
+​
+Map: 100%
+ 7613/7613 [00:00<00:00, 30779.47 examples/s]
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+C:\Users\devot\anaconda3\Lib\site-packages\transformers\training_args.py:1568: FutureWarning: `evaluation_strategy` is deprecated and will be removed in version 4.46 of 🤗 Transformers. Use `eval_strategy` instead
+  warnings.warn(
+C:\Users\devot\AppData\Local\Temp\ipykernel_27024\3823670543.py:62: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `Trainer.__init__`. Use `processing_class` instead.
+  trainer = Trainer(
+Starting training...
+ [12/12 21:08, Epoch 1/1]
+Step	Training Loss	Validation Loss
+Training completed.
+Evaluating the model...
+Evaluation results: {'eval_loss': 0.6749100685119629, 'eval_f1': 0.34886499402628435, 'eval_confusion_matrix': [[832, 40], [505, 146]], 'eval_roc_auc': 0.3527230513395059, 'eval_runtime': 58.6116, 'eval_samples_per_second': 25.985, 'eval_steps_per_second': 0.205, 'epoch': 1.0}
+
+Models trained and evaluated.
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+from sklearn.metrics import confusion_matrix
+​
+#Get predictions from BERT Trainer
+predictions = trainer.predict(test_dataset) 
+predicted_labels = np.argmax(predictions.predictions, axis=1)
+true_labels = predictions.label_ids
+​
+#Calculate the confusion matrix
+conf_matrix = confusion_matrix(true_labels, predicted_labels)
+​
+#Create a heatmap of the confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Non-Disaster', 'Disaster'], 
+            yticklabels=['Non-Disaster', 'Disaster'])
+plt.title('Confusion Matrix for BERT Model')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.show()
+​
+​
+
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# Ensure svm_predictions_proba[:, 1] is used for the positive class probability
+fpr, tpr, thresholds = roc_curve(y_test, svm_predictions_proba[:, 1])
+roc_auc = auc(fpr, tpr)
+
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, lw=2, label='ROC curve (AUC = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], lw=2, linestyle='--', label='Random Guess')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic for SVM')
+plt.legend(loc="lower right")
+plt.show()
+
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+import numpy as np
+​
+# Assuming the test data and labels are df_test['cleaned_text'] and df_test['labels']
+y_test = df_test['labels']
+​
+# Train an SVM with probability calibration to get probability outputs
+vectorizer = TfidfVectorizer()
+svm_model = LinearSVC()
+calibrated_svm = CalibratedClassifierCV(svm_model)
+​
+# Transform and fit
+X_train = vectorizer.fit_transform(df_train['cleaned_text'])
+X_test = vectorizer.transform(df_test['cleaned_text'])
+calibrated_svm.fit(X_train, df_train['labels'])
+​
+# Get predicted probabilities for the test set
+svm_predictions_proba = calibrated_svm.predict_proba(X_test)
+​
+# Calculate ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, svm_predictions_proba[:, 1])
+roc_auc = auc(fpr, tpr)
+​
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, lw=2, label='ROC curve (AUC = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], lw=2, linestyle='--', label='Random Guess')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic for SVM')
+plt.legend(loc="lower right")
+plt.show()
+​
+​
+​
+
+   text = "This is an example text."
+   tokens = tokenizer.tokenize(text)
+   token_ids = tokenizer.convert_tokens_to_ids(tokens)
+​
+   print("Tokens:", tokens)
+   print("Token IDs:", token_ids)
+Tokens: ['this', 'is', 'an', 'example', 'text', '.']
+Token IDs: [2023, 2003, 2019, 2742, 3793, 1012]
+​
+model.save_pretrained('./fine_tuned_bert_model')
+tokenizer.save_pretrained('./fine_tuned_bert_model')
+('./fine_tuned_bert_model\\tokenizer_config.json',
+ './fine_tuned_bert_model\\special_tokens_map.json',
+ './fine_tuned_bert_model\\vocab.txt',
+ './fine_tuned_bert_model\\added_tokens.json',
+ './fine_tuned_bert_model\\tokenizer.json')
+import ipywidgets as widgets
+from IPython.display import display
+import torch
+​
+# ... (your existing code to load the model and tokenizer) ...
+​
+# Function to classify text
+def classify_text(text):
+    inputs = tokenizer(text, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**inputs)
+        predicted_class = torch.argmax(outputs.logits).item()
+​
+    class_labels = {0: "Not Disaster", 1: "Disaster"}  # Replace with your class labels
+    return class_labels[predicted_class]
+​
+​
+# Create input text widget
+text_input = widgets.Text(
+    placeholder="Enter text here...",
+    description="Text:",
+    disabled=False
+)
+​
+# Create output label widget
+output_label = widgets.Label(value="")
+​
+# Function to update output when text changes
+def on_text_change(change):
+    text = change["new"]
+    prediction = classify_text(text)
+    output_label.value = f"Prediction: {prediction}"
+​
+# Observe text input changes
+text_input.observe(on_text_change, names='value')
+​
+# Display widgets
+display(text_input, output_label)
+Text(value='', description='Text:', placeholder='Enter text here...')
+Label(value='')
+from sklearn.metrics import classification_report
+import numpy as np
+
+# Get predictions from BERT Trainer
+predictions = trainer.predict(test_dataset)
+bert_preds = np.argmax(predictions.predictions, axis=-1)  # Get the predicted class labels
+true_labels = predictions.label_ids  # Get the true labels
+
+# Generate and print the classification report
+bert_classification_report = classification_report(true_labels, bert_preds, target_names=['Non-Disaster', 'Disaster'])
+print("Classification Report for BERT Model:")
+print(bert_classification_report)
+from sklearn.metrics import classification_report
+import numpy as np
+​
+# Get predictions from BERT Trainer
+predictions = trainer.predict(test_dataset)
+bert_preds = np.argmax(predictions.predictions, axis=-1)  # Get the predicted class labels
+true_labels = predictions.label_ids  # Get the true labels
+​
+# Generate and print the classification report
+bert_classification_report = classification_report(true_labels, bert_preds, target_names=['Non-Disaster', 'Disaster'])
+print("Classification Report for BERT Model:")
+print(bert_classification_report)
+​
+Classification Report for BERT Model:
+              precision    recall  f1-score   support
+
+Non-Disaster       0.62      0.95      0.75       872
+    Disaster       0.78      0.22      0.35       651
+
+    accuracy                           0.64      1523
+   macro avg       0.70      0.59      0.55      1523
+weighted avg       0.69      0.64      0.58      1523
